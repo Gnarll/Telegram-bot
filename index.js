@@ -1,10 +1,22 @@
 const TelegramAPI = require('node-telegram-bot-api');
+const { gameOptions, againOptions } = require('./options');
+
+(function ass() {
+  console.log(gameOptions, againOptions);
+})();
 
 const token = '5227120210:AAGvlScLIMhL4ud3pUKEapx3hzn-3gj9OpU';
 
 const bot = new TelegramAPI(token, { polling: true });
 
 const chats = {};
+
+const startGame = async (chatID) => {
+  await bot.sendMessage(chatID, "Let's play a game. Try to guess a number from 0 to 9 I guessed");
+  const randomNumber = Math.floor(Math.random() * 10);
+  chats[chatID] = randomNumber;
+  await bot.sendMessage(chatID, 'So what do you think?', gameOptions);
+};
 
 bot.setMyCommands([
   { command: '/start', description: 'Greeting' },
@@ -26,11 +38,16 @@ bot.on('message', async (message) => {
   }
 
   if (text === '/game') {
-    await bot.sendMessage(chatID, "Let's play a game. Try to guess a number from 0 to 9 I guessed");
-    const randomNumber = Math.floor(Math.random() * 10);
-    chats[chatID] = randomNumber;
-    return bot.sendMessage(chatID, 'So what do you think?');
+    return startGame(chatID);
   }
 
   return bot.sendMessage(chatID, 'There is no such command');
+});
+
+bot.on('callback_query', async (message) => {
+  const chatID = message.message.chat.id;
+  const data = message.data;
+  if (data == '/again') return startGame(chatID);
+  if (chats[chatID] == data) return bot.sendMessage(chatID, 'Congratulations, this is it!', againOptions);
+  else return bot.sendMessage(chatID, `You didn't guess. It's ${chats[chatID]}`, againOptions);
 });
